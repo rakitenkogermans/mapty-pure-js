@@ -1,6 +1,5 @@
 'use strict';
 
-
 const form = document.querySelector('.form');
 const containerWorkouts = document.querySelector('.workouts');
 const inputType = document.querySelector('.form__input--type');
@@ -12,7 +11,6 @@ const inputElevation = document.querySelector('.form__input--elevation');
 class Workout {
   date = new Date();
   id = Date.now().toString(36) + Math.random().toString(36).substr(2);
-  clicks = 0;
 
   constructor(coords, distance, duration) {
     this.coords = coords;
@@ -25,9 +23,6 @@ class Workout {
     this.description = `${this.type[0].toUpperCase()}${this.type.slice(1)} on ${months[this.date.getMonth()]} ${this.date.getDate()}`
   }
 
-  click() {
-    this.clicks++;
-  }
 }
 
 class Running extends Workout {
@@ -67,10 +62,14 @@ class App {
   #workouts = [];
 
   constructor() {
+    // Get user position
     this._getPosition();
 
-    form.addEventListener('submit', this._newWorkout.bind(this));
+    // Get data from Localstorage
+    this._getLocalStorage();
 
+    // Event handlers
+    form.addEventListener('submit', this._newWorkout.bind(this));
     inputType.addEventListener('change', this._toggleElevationField);
     containerWorkouts.addEventListener('click', this._moveToMarker.bind(this));
   }
@@ -96,6 +95,10 @@ class App {
       }).addTo(this.#map);
 
       this.#map.on('click', this._showForm.bind(this));
+
+      this.#workouts.forEach(work => {
+        this._renderWorkoutMarker(work);
+      });
   }
 
   _showForm(mapEvent) {
@@ -159,10 +162,14 @@ class App {
     }
     this.#workouts.push(workout);
 
+    // Render marker on map
     this._renderWorkoutMarker(workout);
+    // Render workout on sidebar
     this._renderWorkout(workout);
-
+    // Hide form after submitting
     this._hideForm();
+
+    this._setLocalStorage();
   }
 
   _renderWorkoutMarker(workout) {
@@ -190,8 +197,6 @@ class App {
         duration: 1
       }
     });
-
-    workout.click();
   }
 
   _renderWorkout(workout) {
@@ -243,9 +248,37 @@ class App {
     }
 
     form.insertAdjacentHTML('afterend', html);
+  }
 
+  _setLocalStorage() {
+    localStorage.setItem('workouts', JSON.stringify(this.#workouts));
+  }
+
+  _getLocalStorage() {
+    const data = JSON.parse(localStorage.getItem('workouts'));
+    if (!data) return;
+    this.#workouts = data;
+
+    this.#workouts.forEach(work => {
+      this._renderWorkout(work);
+    });
+  }
+
+  reset() {
+    localStorage.removeItem('workouts');
+    location.reload();
   }
 }
 
-
 const app = new App();
+
+// TODO
+// Edit workout
+// Delete workout
+// Delete all workouts
+// Sort workouts by field
+// Rebuild getting data from localstorage for chaining
+// Better error and confirmation messages
+// Draw lines and shapes instead of points
+// Geocode location
+// Display weather
